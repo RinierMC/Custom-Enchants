@@ -144,15 +144,84 @@ public class MyEnchant extends BaseCustomEnchant {
 }
 ```
 
-### Step 4: Register it in your plugin's `onEnable()`
+```markdown
+## 🎯 Handling Custom Enchantment Effects
+
+To make your custom enchantment actually **do something** (e.g., deal extra damage, heal the player, etc.), you need to listen to the appropriate PowerNukkitX events and check if the item has your enchantment.
+
+The plugin provides utility methods in `EnchantUtil` for this purpose:
+
+- `EnchantUtil.has(Item item, Enchantment enchant)` – checks if the item has the enchantment.
+- `EnchantUtil.getLevel(Item item, Enchantment enchant)` – returns the level (0 if absent).
+
+### Example: Lightning Strike on Hit
+
+Create a listener that triggers when a player attacks an entity:
+
+```java
+import org.powernukkitx.Player;
+import org.powernukkitx.entity.Entity;
+import org.powernukkitx.event.EventHandler;
+import org.powernukkitx.event.Listener;
+import org.powernukkitx.event.entity.EntityDamageByEntityEvent;
+import org.powernukkitx.item.Item;
+import org.powernukkitx.ce.util.EnchantUtil;
+import org.powernukkitx.ce.Main;
+import myplugin.enchantments.MyLightningEnchant;
+
+public class LightningListener implements Listener {
+    private final MyLightningEnchant enchant;
+
+    public LightningListener(MyLightningEnchant enchant) {
+        this.enchant = enchant;
+    }
+
+    @EventHandler
+    public void onAttack(EntityDamageByEntityEvent event) {
+        if (!(event.getDamager() instanceof Player player)) return;
+
+        Item weapon = player.getInventory().getItemInMainHand();
+        int level = EnchantUtil.getLevel(weapon, enchant);
+        if (level <= 0) return;
+
+        // Trigger lightning with a chance based on level
+        if (Math.random() < 0.2 * level) {
+            Entity target = event.getEntity();
+            target.getLevel().strikeLightning(target.getPosition());
+        }
+    }
+}
+```
+
+Then register this listener in your plugin:
 
 ```java
 public void onEnable() {
     Main ce = (Main) getServer().getPluginManager().getPlugin("Custom_Enchants");
     if (ce != null) {
-        ce.registerCustomEnchant(new MyEnchant(), "myenchant");
+        MyLightningEnchant lightning = new MyLightningEnchant();
+        ce.registerCustomEnchant(lightning, "lightning");
+
+        // Register our custom listener
+        getServer().getPluginManager().registerEvents(new LightningListener(lightning), this);
     }
 }
+```
+
+Now your enchantment will strike lightning on hit!
+
+---
+
+### Performance Note
+
+The listener is invoked **every time** the event fires (e.g., every attack). However, the first check inside the listener is:
+
+```java
+int level = EnchantUtil.getLevel(weapon, enchant);
+if (level <= 0) return;
+```
+
+This check is **fast** (just reads NBT) and ensures that for items without your enchantment, the listener exits immediately with almost zero overhead. So while the listener is always called, it only executes heavy logic when the enchantment is actually present – making it efficient even on busy servers.
 ```
 
 Now players can use `/ce myenchant 3` to get a book, and apply it exactly like the built‑in enchants.
