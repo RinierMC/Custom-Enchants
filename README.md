@@ -14,7 +14,7 @@
 
 ## Installation
 
-1. Download the latest
+1. Download the latest: https://github.com/RinierMC/Custom-Enchants/releases/tag/Latest
 2. Place it in your server’s `plugins/` folder.
 3. Restart the server (or use `/reload`).
 4. All 30 enchantments are registered automatically.
