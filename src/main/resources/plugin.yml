@@ -1,0 +1,12 @@
+name: Custom_Enchants
+main: org.powernukkitx.ce.Main
+version: "1.1.0"
+api: [ "3.0.0" ]
+load: POSTWORLD
+author: 2kMcFloat
+description: 14 custom enchantments for PowerNukkitX - universal, armor, weapon, tool and single-slot enchants
+
+permissions:
+  customenchants.command.enchant:
+    description: Allows applying custom enchantments via /customenchant
+    default: op
