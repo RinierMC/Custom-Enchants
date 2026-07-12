@@ -144,8 +144,7 @@ public class MyEnchant extends BaseCustomEnchant {
 }
 ```
 
-```markdown
-## 🎯 Handling Custom Enchantment Effects
+### Step 4: Handling Custom Enchantment Effects
 
 To make your custom enchantment actually **do something** (e.g., deal extra damage, heal the player, etc.), you need to listen to the appropriate PowerNukkitX events and check if the item has your enchantment.
 
@@ -202,7 +201,7 @@ public void onEnable() {
         MyLightningEnchant lightning = new MyLightningEnchant();
         ce.registerCustomEnchant(lightning, "lightning");
 
-        // Register our custom listener
+        // Register your custom listener
         getServer().getPluginManager().registerEvents(new LightningListener(lightning), this);
     }
 }
@@ -222,7 +221,6 @@ if (level <= 0) return;
 ```
 
 This check is **fast** (just reads NBT) and ensures that for items without your enchantment, the listener exits immediately with almost zero overhead. So while the listener is always called, it only executes heavy logic when the enchantment is actually present – making it efficient even on busy servers.
-```
 
 Now players can use `/ce myenchant 3` to get a book, and apply it exactly like the built‑in enchants.
 
