@@ -2,9 +2,11 @@ package org.powernukkitx.ce.util;
 
 import org.powernukkitx.ce.Main;
 import org.powernukkitx.ce.enchantment.CustomEnchant;
+import org.powernukkitx.ce.enchantment.EnchantSoulbound;
 import org.powernukkitx.item.Item;
 import org.powernukkitx.item.enchantment.Enchantment;
 import org.powernukkitx.nbt.tag.CompoundTag;
+import org.powernukkitx.nbt.tag.ListTag;
 import org.powernukkitx.utils.TextFormat;
 
 import java.lang.reflect.Method;
@@ -46,11 +48,20 @@ public final class EnchantUtil {
         if (leveled == null) return false;
 
         assert ec.getIdentifier() != null;
+        // Remove any existing entry for this enchantment first
         item.removeEnchantment(ec.getIdentifier());
+        // Add the new entry
         item.addEnchantment(leveled);
 
+        // Soulbound: mark keepOnDeath
+        if (ec instanceof EnchantSoulbound) {
+            item.setKeepOnDeath(true);
+        }
+
+        // Clear any custom name set by the client (we manage lore ourselves)
         item.clearCustomName();
 
+        // Add/update lore
         String key = keyOf(ec);
         List<String> lore = currentLore(item);
         lore.removeIf(line -> matchesKey(line, key));
@@ -62,11 +73,27 @@ public final class EnchantUtil {
     public static void remove(Item item, Enchantment ec) {
         if (item == null || item.isNull() || ec == null) return;
         assert ec.getIdentifier() != null;
-        item.removeEnchantment(ec.getIdentifier());
+        String id = ec.getIdentifier().toString();
+
+        item.removeEnchantment(id);
+
+        if (ec instanceof EnchantSoulbound) {
+            item.setKeepOnDeath(false);
+        }
+
         String key = keyOf(ec);
         List<String> lore = currentLore(item);
         if (lore.removeIf(line -> matchesKey(line, key))) {
             item.setLore(lore.toArray(new String[0]));
+        }
+
+        CompoundTag tag = item.getNbt();
+        if (tag != null && tag.contains("custom_ench")) {
+            ListTag<CompoundTag> custom = tag.getList("custom_ench", CompoundTag.class);
+            if (custom.size() == 0) {
+                tag.remove("custom_ench");
+                item.setNbt(tag);
+            }
         }
         item.clearCustomName();
     }
@@ -83,10 +110,11 @@ public final class EnchantUtil {
         return item.hasCustomEnchantment(ec.getIdentifier());
     }
 
+    // -------- Book creation ----------
     public static Item createEnchantBook(Enchantment enchant, int level) {
         if (enchant == null || level < 1) return null;
         Item book = Item.get(Item.BOOK);
-        book.setCustomName(TextFormat.RESET + "" + TextFormat.BOLD +  TextFormat.AQUA + enchant.getName());
+        book.setCustomName(TextFormat.RESET + "" + TextFormat.BOLD + TextFormat.AQUA + enchant.getName());
 
         List<String> lore = new ArrayList<>();
         lore.add(TextFormat.RESET + "" + TextFormat.GRAY + "Level: " + TextFormat.WHITE + level);
@@ -120,6 +148,7 @@ public final class EnchantUtil {
         return tag.getInt("ce_enchant_level");
     }
 
+    // -------- Internal helpers ----------
     private static boolean matchesKey(String line, String key) {
         Matcher m = MARKER.matcher(TextFormat.clean(line));
         return m.find() && m.group("key").equals(key);

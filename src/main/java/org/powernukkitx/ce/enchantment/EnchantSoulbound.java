@@ -11,7 +11,7 @@ public class EnchantSoulbound extends Enchantment implements CustomEnchant {
 
     @Override
     public int getMaxLevel() {
-        return 1;
+        return 3;
     }
 
     @Override

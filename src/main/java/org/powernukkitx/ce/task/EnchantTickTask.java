@@ -27,6 +27,9 @@ public class EnchantTickTask extends Task {
     public void onRun(int currentTick) {
         for (Player player : Server.getInstance().getOnlinePlayers().values()) {
             if (player == null || !player.isOnline()) continue;
+            if (!player.isAlive() || !player.spawned) {
+                continue;
+            }
 
             applyOverload(player);
             applyHaste(player);
@@ -46,10 +49,16 @@ public class EnchantTickTask extends Task {
             totalLevels += EnchantUtil.getLevel(piece, plugin.overload);
         }
         int targetMaxHealth = BASE_MAX_HEALTH + totalLevels * EnchantOverload.EXTRA_HP_PER_LEVEL;
-        if (player.getHealthMax() != targetMaxHealth) {
-            float ratio = player.getHealthCurrent() / (float) player.getHealthMax();
+        int currentMax = player.getHealthMax();
+
+        if (currentMax != targetMaxHealth) {
+            int healthDifference = targetMaxHealth - currentMax;
             player.setHealthMax(targetMaxHealth);
-            player.setHealthCurrent(Math.clamp(targetMaxHealth * ratio, 1, targetMaxHealth));
+
+            float newHealth = player.getHealthCurrent() + healthDifference;
+            if (newHealth < 1) newHealth = 1;
+            if (newHealth > targetMaxHealth) newHealth = targetMaxHealth;
+            player.setHealthCurrent(newHealth);
         }
     }
 
@@ -85,7 +94,7 @@ public class EnchantTickTask extends Task {
         double radius = plugin.magnet.getRadius(level);
         for (Entity entity : player.getLevel().getNearbyEntities(
                 player.getBoundingBox().grow(radius, radius, radius), player)) {
-            if (entity instanceof EntityItem droppedItem && entity.isAlive()) {
+            if (entity instanceof EntityItem && entity.isAlive()) {
                 entity.setMotion(player.subtract(entity).normalize().multiply(0.35));
             }
         }

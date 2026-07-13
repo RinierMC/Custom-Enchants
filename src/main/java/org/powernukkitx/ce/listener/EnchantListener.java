@@ -12,8 +12,8 @@ import org.powernukkitx.event.Listener;
 import org.powernukkitx.event.block.BlockBreakEvent;
 import org.powernukkitx.event.entity.EntityDamageByEntityEvent;
 import org.powernukkitx.event.entity.EntityDamageEvent;
-import org.powernukkitx.event.player.PlayerDeathEvent;
 import org.powernukkitx.event.player.PlayerFoodLevelChangeEvent;
+import org.powernukkitx.event.player.PlayerRespawnEvent;
 import org.powernukkitx.item.Item;
 import org.powernukkitx.level.Level;
 import org.powernukkitx.math.Vector3;
@@ -22,10 +22,7 @@ import org.powernukkitx.ce.enchantment.*;
 import org.powernukkitx.ce.util.EnchantUtil;
 
 import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 @SuppressWarnings("unused")
@@ -36,6 +33,10 @@ public class EnchantListener implements Listener {
     public EnchantListener(Main plugin) {
         this.plugin = plugin;
     }
+
+    // ------------------------------------------------------------------
+    // Combat
+    // ------------------------------------------------------------------
 
     @EventHandler(priority = EventPriority.HIGH)
     public void onDamageByEntity(EntityDamageByEntityEvent event) {
@@ -142,6 +143,10 @@ public class EnchantListener implements Listener {
         }
         return best;
     }
+
+    // ------------------------------------------------------------------
+    // Mining / tool enchants
+    // ------------------------------------------------------------------
 
     @EventHandler(priority = EventPriority.HIGH)
     public void onBlockBreak(BlockBreakEvent event) {
@@ -280,6 +285,10 @@ public class EnchantListener implements Listener {
         }
     }
 
+    // ------------------------------------------------------------------
+    // Food
+    // ------------------------------------------------------------------
+
     @EventHandler
     public void onFoodLevelChange(PlayerFoodLevelChangeEvent event) {
         Player player = event.getPlayer();
@@ -292,21 +301,28 @@ public class EnchantListener implements Listener {
     }
 
     @EventHandler
-    public void onPlayerDeath(PlayerDeathEvent event) {
-        Player player = event.getEntity();
-        List<Item> drops = new ArrayList<>(Arrays.asList(event.getDrops()));
-        for (Item item : player.getInventory().getContents().values()) {
-            if (item != null && !item.isNull() && EnchantUtil.has(item, plugin.soulbound)) {
-                drops.remove(item);
+    public void onPlayerRespawn(PlayerRespawnEvent event) {
+        Player player = event.getPlayer();
+
+        for (int slot = 0; slot < player.getInventory().getSize(); slot++) {
+            Item item = player.getInventory().getItem(slot);
+            if (!item.isNull() && EnchantUtil.has(item, plugin.soulbound)) {
+                int level = EnchantUtil.getLevel(item, plugin.soulbound);
+                if (level <= 1) {
+                    EnchantUtil.remove(item, plugin.soulbound);
+                    item.setKeepOnDeath(false);
+                    player.getInventory().setItem(slot, item);
+                } else {
+                    EnchantUtil.apply(item, plugin.soulbound, level - 1);
+                    player.getInventory().setItem(slot, item);
+                }
             }
         }
-        for (Item piece : player.getInventory().getArmorContents()) {
-            if (piece != null && !piece.isNull() && EnchantUtil.has(piece, plugin.soulbound)) {
-                drops.remove(piece);
-            }
-        }
-        event.setDrops(drops.toArray(Item.EMPTY_ARRAY));
     }
+
+    // ------------------------------------------------------------------
+    // Helpers
+    // ------------------------------------------------------------------
 
     private boolean isLog(Block block) {
         String name = block.getName().toLowerCase();

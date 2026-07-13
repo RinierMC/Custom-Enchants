@@ -78,6 +78,12 @@ public class CustomEnchantCommand extends Command {
             return true;
         }
 
+        // Enforce max level
+        if (level > enchant.getMaxLevel()) {
+            sender.sendMessage(TextFormat.RED + enchant.getName() + " has a maximum level of " + enchant.getMaxLevel() + ".");
+            return true;
+        }
+
         if (hasItem && enchant.canEnchant(item)) {
             if (!EnchantUtil.apply(item, enchant, level)) {
                 sender.sendMessage(TextFormat.RED + enchant.getName()
@@ -104,7 +110,7 @@ public class CustomEnchantCommand extends Command {
 
         sender.sendMessage(TextFormat.GREEN + "You received a " + TextFormat.YELLOW + enchant.getName()
                 + " " + level + TextFormat.GREEN + " book.");
-        sender.sendMessage(TextFormat.GRAY + "Hold the book and click an item in your inventory to apply it.");
+        sender.sendMessage(TextFormat.GRAY + "Hold the book and drag it onto the item you want to enchant.");
         return true;
     }
 
